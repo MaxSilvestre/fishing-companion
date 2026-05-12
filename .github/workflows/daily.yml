@@ -36,12 +36,25 @@ jobs:
 
       - name: Commit docs/ if changed
         run: |
+          set -e
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/
           if git diff --staged --quiet; then
             echo "No changes in docs/ — nothing to commit."
-          else
-            git commit -m "chore: daily forecast update"
-            git push
+            exit 0
           fi
+          git commit -m "chore: daily forecast update"
+          # Handle race when a concurrent run pushed between our checkout and now.
+          # On conflict, prefer our freshly generated docs/ over the racing run's.
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "Pushed on attempt $attempt."
+              exit 0
+            fi
+            echo "Push rejected on attempt $attempt — rebasing on origin/main."
+            git fetch origin main
+            git rebase --strategy-option=theirs origin/main
+          done
+          echo "Push still rejected after 3 attempts." >&2
+          exit 1
