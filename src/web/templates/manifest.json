@@ -1,0 +1,20 @@
+{
+  "name": "Fishing Companion",
+  "short_name": "Fishing",
+  "description": "Tableau de bord pêche personnel — scores d'activité sur 7 jours",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f7fa",
+  "theme_color": "#2f8c4c",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

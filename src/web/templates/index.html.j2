@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2f8c4c">
+  <title>Fishing Companion</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+</head>
+<body>
+  <header>
+    <h1>🎣 Fishing Companion</h1>
+    <p class="muted">
+      Dernière mise à jour : {{ generated_at }}
+      {% if force_update_url %}
+      · <a class="force-update" href="{{ force_update_url }}" target="_blank" rel="noopener">🔄 Forcer la mise à jour</a>
+      {% endif %}
+    </p>
+  </header>
+
+  <main>
+    {% for spot in spots %}
+    <section class="spot" data-spot="{{ spot.id }}">
+      <h2>{{ spot.name }}</h2>
+      <div class="matrix-wrap">
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th class="date-col">Jour</th>
+              {% for sp in species %}
+              <th class="species-col" title="{{ sp.name }}">
+                <span class="species-emoji">{{ sp.emoji }}</span>
+                <span class="species-name">{{ sp.name }}</span>
+              </th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in spot.rows %}
+            <tr>
+              <th class="date-col">
+                <span class="weekday">{{ row.weekday }}</span>
+                <span class="date">{{ row.date_short }}</span>
+              </th>
+              {% for cell in row.cells %}
+              <td class="cell cell-{{ cell.tier }}"
+                  {% if cell.score is not none %}
+                  data-spot="{{ spot.id }}"
+                  data-date="{{ row.date_iso }}"
+                  data-species="{{ cell.species_id }}"
+                  tabindex="0"
+                  role="button"
+                  aria-label="{{ cell.species_name }} {{ row.weekday }} {{ row.date_short }}, score {{ cell.score }}"
+                  {% endif %}>
+                {% if cell.score is not none %}{{ cell.score }}{% else %}–{% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endfor %}
+  </main>
+
+  <footer>
+    <p class="muted">
+      Données : <a href="https://open-meteo.com/">Open-Meteo</a> · Astronomie : astral
+    </p>
+  </footer>
+
+  <dialog id="detail-dialog" aria-labelledby="detail-title">
+    <button type="button" class="close" aria-label="Fermer">×</button>
+    <h3 id="detail-title"></h3>
+    <div id="detail-content"></div>
+  </dialog>
+
+  <script id="dashboard-data" type="application/json">{{ embedded_json | safe }}</script>
+  <script src="app.js" defer></script>
+</body>
+</html>

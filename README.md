@@ -43,3 +43,44 @@ pytest -v
 
 Activer GitHub Pages : `Settings > Pages > Source: main branch, /docs folder`.
 Le workflow `.github/workflows/daily.yml` regénère et commit `docs/` chaque matin.
+
+## Gérer les spots et espèces
+
+Toute la configuration vit dans `data/spots.json` et `data/species.json`. Pour ajouter / supprimer / modifier un spot ou une espèce :
+
+### Méthode rapide depuis n'importe quel device (recommandée)
+
+1. Ouvre `https://github.com/<owner>/<repo>/edit/main/data/spots.json` (ou `species.json`).
+2. Modifie le JSON dans l'éditeur web.
+3. Commit directement sur `main`.
+4. Dans le dashboard, clique sur **🔄 Forcer la mise à jour** (en haut). Le workflow GHA tourne, regénère `docs/`, GitHub Pages se met à jour en 1-2 min.
+
+Sinon attends le cron du lendemain matin.
+
+### Méthode locale
+
+```bash
+# Édite data/spots.json puis valide la structure
+python -c "from src.core.config import load_spots, load_species; \
+           print(len(load_spots()), 'spots,', len(load_species()), 'species')"
+
+git add data/spots.json
+git commit -m "feat(data): add Annecy spot"
+git push
+```
+
+### Schéma d'un spot
+
+```json
+{
+  "id": "annecy",                         // identifiant unique (snake_case)
+  "name": "Annecy (Lac)",                 // libellé affiché
+  "latitude": 45.8992,                    // -90 à 90
+  "longitude": 6.1294,                    // -180 à 180
+  "type": "lac",                          // "fleuve" | "riviere" | "lac"
+  "altitude": 447,                        // en mètres
+  "notes": "Lac alpin, eaux claires"      // optionnel
+}
+```
+
+Le chargement échoue avec un message explicite si le JSON ou les valeurs sont invalides — pas besoin de tester en aveugle.

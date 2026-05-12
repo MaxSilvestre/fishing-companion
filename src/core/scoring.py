@@ -212,7 +212,7 @@ def _hour_at(weather: WeatherData, day: date, hour: int) -> HourlyWeather | None
     return None
 
 
-def _aggregate_day_weather(weather: WeatherData, day: date) -> dict[str, float]:
+def aggregate_day_weather(weather: WeatherData, day: date) -> dict[str, float]:
     """Compute the daily aggregates the scorer consumes."""
     day_hours = [h for h in weather.hourly if h.time.date() == day]
     if not day_hours:
@@ -247,7 +247,7 @@ def compute_day_score(
     Aggregates the hourly weather on ``solunar_day.date`` and combines all
     five sub-scores with the spec weights (0.25 / 0.25 / 0.20 / 0.10 / 0.20).
     """
-    agg = _aggregate_day_weather(weather, solunar_day.date)
+    agg = aggregate_day_weather(weather, solunar_day.date)
     water_temp = estimate_water_temp(
         agg["air_temp_avg"], solunar_day.date.month, spot.type
     )
