@@ -20,7 +20,7 @@ def _fake_payload(latitude: float = 45.764, longitude: float = 4.8357) -> dict:
                 "2026-05-12T02:00",
             ],
             "temperature_2m": [10.0, 9.8, 9.5],
-            "surface_pressure": [1015.0, 1015.5, 1016.0],
+            "pressure_msl": [1015.0, 1015.5, 1016.0],
             "wind_speed_10m": [5.0, 4.5, 4.0],
             "wind_direction_10m": [180.0, 190.0, 200.0],
             "cloud_cover": [50.0, 55.0, 60.0],
@@ -65,14 +65,14 @@ async def test_fetch_returns_parsed_weather():
     assert str(API_URL) in captured["url"]
     assert "latitude=45.764" in captured["url"]
     assert "longitude=4.8357" in captured["url"]
-    assert "past_days=1" in captured["url"]
+    assert "past_days=3" in captured["url"]
     assert "forecast_days=7" in captured["url"]
     assert "timezone=auto" in captured["url"]
 
     assert wd.latitude == 45.764
     assert len(wd.hourly) == 3
     assert wd.hourly[0].temperature_2m == 10.0
-    assert wd.hourly[0].surface_pressure == 1015.0
+    assert wd.hourly[0].pressure_msl == 1015.0
     assert len(wd.daily) == 2
     assert wd.daily[0].temperature_2m_max == 18.0
 

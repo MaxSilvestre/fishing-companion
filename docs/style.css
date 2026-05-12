@@ -152,6 +152,16 @@ table.matrix tbody th.date-col {
   font-weight: 500;
 }
 
+.row-past td,
+.row-past th {
+  opacity: 0.55;
+}
+
+.row-today th.date-col {
+  font-weight: 700;
+  color: var(--color-good);
+}
+
 .cell {
   font-weight: 700;
   font-variant-numeric: tabular-nums;

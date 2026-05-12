@@ -40,7 +40,7 @@
           </thead>
           <tbody>
             {% for row in spot.rows %}
-            <tr>
+            <tr class="{% if row.is_past %}row-past{% elif row.is_today %}row-today{% endif %}">
               <th class="date-col">
                 <span class="weekday">{{ row.weekday }}</span>
                 <span class="date">{{ row.date_short }}</span>

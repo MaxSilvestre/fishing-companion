@@ -8,7 +8,7 @@ those files to disk.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -90,9 +90,24 @@ def _weather_aggregates_to_dict(
     }
 
 
+def _day_label(d: date, today: date) -> str:
+    """Return a short relative or weekday label for a date row."""
+    delta = (d - today).days
+    if delta == -1:
+        return "Hier"
+    if delta == 0:
+        return "Auj."
+    return WEEKDAYS_FR[d.weekday()]
+
+
 def _build_view(matrix: ScoresMatrix) -> dict[str, Any]:
     """Project the matrix into a template-friendly nested structure."""
     dates = sorted({score.date for score in matrix.scores})
+    today = (
+        matrix.generated_at.astimezone(DISPLAY_TIMEZONE).date()
+        if matrix.generated_at.tzinfo is not None
+        else matrix.generated_at.date()
+    )
 
     spots_view = []
     for spot in matrix.spots:
@@ -114,7 +129,9 @@ def _build_view(matrix: ScoresMatrix) -> dict[str, Any]:
                 {
                     "date_iso": d.isoformat(),
                     "date_short": d.strftime("%d/%m"),
-                    "weekday": WEEKDAYS_FR[d.weekday()],
+                    "weekday": _day_label(d, today),
+                    "is_past": d < today,
+                    "is_today": d == today,
                     "cells": cells,
                 }
             )

@@ -162,7 +162,7 @@ class TestWeatherModels:
             HourlyWeather(
                 time=datetime(2026, 5, 12, 10),
                 temperature_2m=15.0,
-                surface_pressure=1015.0,
+                pressure_msl=1015.0,
                 wind_speed_10m=5.0,
                 wind_direction_10m=180.0,
                 cloud_cover=110.0,

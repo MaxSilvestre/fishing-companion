@@ -26,7 +26,11 @@ from src.core.weather import HTTP_TIMEOUT_SECONDS, fetch_forecast
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_FORECAST_DAYS = 7
+# 8-day window: yesterday + today + 6 days ahead. Yesterday is useful for
+# validation ("was the model right about yesterday?") and the user explicitly
+# asked to see it.
+DEFAULT_FORECAST_DAYS = 8
+DEFAULT_START_OFFSET_DAYS = -1
 
 
 async def compute_all_scores(
@@ -43,7 +47,7 @@ async def compute_all_scores(
     ``httpx.AsyncClient``, then computes solunar and scoring sequentially
     (both CPU-bound and fast).
     """
-    start = start_date or date.today()
+    start = start_date or (date.today() + timedelta(days=DEFAULT_START_OFFSET_DAYS))
     target_dates = [start + timedelta(days=i) for i in range(days)]
 
     logger.info(

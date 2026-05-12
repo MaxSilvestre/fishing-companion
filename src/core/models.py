@@ -97,7 +97,7 @@ class HourlyWeather(BaseModel):
 
     time: datetime
     temperature_2m: float
-    surface_pressure: float
+    pressure_msl: float
     wind_speed_10m: float = Field(..., ge=0.0)
     wind_direction_10m: float = Field(..., ge=0.0, le=360.0)
     cloud_cover: float = Field(..., ge=0.0, le=100.0)

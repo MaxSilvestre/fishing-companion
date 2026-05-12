@@ -69,7 +69,7 @@ def _fake_payload(start: date, days_total: int = 8) -> dict:
                 for i in range(n_hours)
             ],
             "temperature_2m": [18.0] * n_hours,
-            "surface_pressure": [1018.0] * n_hours,
+            "pressure_msl": [1018.0] * n_hours,
             "wind_speed_10m": [6.0] * n_hours,
             "wind_direction_10m": [180.0] * n_hours,
             "cloud_cover": [60.0] * n_hours,

@@ -22,7 +22,7 @@ API_URL = "https://api.open-meteo.com/v1/forecast"
 
 HOURLY_FIELDS = (
     "temperature_2m",
-    "surface_pressure",
+    "pressure_msl",
     "wind_speed_10m",
     "wind_direction_10m",
     "cloud_cover",
@@ -36,7 +36,9 @@ DAILY_FIELDS = (
 )
 
 FORECAST_DAYS = 7
-PAST_DAYS = 1
+# 3 past days lets us show yesterday in the dashboard AND compute a 48h
+# pressure trend for it (needs day-before-yesterday and day-before-that).
+PAST_DAYS = 3
 CACHE_TTL_SECONDS = 30 * 60
 MAX_ATTEMPTS = 3
 INITIAL_BACKOFF_SECONDS = 1.0
@@ -76,7 +78,7 @@ def _parse_response(payload: dict[str, Any]) -> WeatherData:
         HourlyWeather(
             time=t,
             temperature_2m=temp,
-            surface_pressure=pres,
+            pressure_msl=pres,
             wind_speed_10m=ws,
             wind_direction_10m=wd,
             cloud_cover=cc,
@@ -85,7 +87,7 @@ def _parse_response(payload: dict[str, Any]) -> WeatherData:
         for t, temp, pres, ws, wd, cc, p in zip(
             hourly_raw["time"],
             hourly_raw["temperature_2m"],
-            hourly_raw["surface_pressure"],
+            hourly_raw["pressure_msl"],
             hourly_raw["wind_speed_10m"],
             hourly_raw["wind_direction_10m"],
             hourly_raw["cloud_cover"],

@@ -173,6 +173,27 @@ class TestScorePressure:
         # 1000 base = 15, -20 penalty would give -5, clamped to 0.
         assert score_pressure(1000.0, -5.0) == 0.0
 
+    def test_48h_trend_rising_adds_small_bonus(self):
+        # Optimal pressure (100) with 48h rise > 4 hPa: + 5, clamped to 100.
+        assert score_pressure(1015.0, 0.0, 5.0) == 100.0
+        # Below optimal: 1010 → base 65, no 24h trend, 48h +5 → 70.
+        assert score_pressure(1010.0, 0.0, 5.0) == 70.0
+
+    def test_48h_trend_falling_adds_penalty(self):
+        # Optimal pressure, 48h drop < -6 → -10 → 90.
+        assert score_pressure(1015.0, 0.0, -7.0) == 90.0
+
+    def test_24h_and_48h_trends_stack(self):
+        # 1010 → base 65; 24h rise (+10) and 48h rise (+5) → 80.
+        assert score_pressure(1010.0, 3.0, 5.0) == 80.0
+        # 1010 → base 65; 24h drop (-20) and 48h drop (-10) → 35.
+        assert score_pressure(1010.0, -5.0, -8.0) == 35.0
+
+    def test_48h_trend_within_threshold_no_effect(self):
+        # 48h trend in (-6, +4]: no change.
+        assert score_pressure(1015.0, 0.0, 3.0) == 100.0
+        assert score_pressure(1015.0, 0.0, -5.0) == 100.0
+
 
 class TestScoreSolunar:
     @staticmethod
@@ -344,7 +365,7 @@ def _build_weather(
                 HourlyWeather(
                     time=offset + timedelta(hours=h),
                     temperature_2m=air_temp,
-                    surface_pressure=pressure,
+                    pressure_msl=pressure,
                     wind_speed_10m=wind,
                     wind_direction_10m=180.0,
                     cloud_cover=cloud,
@@ -469,6 +490,59 @@ class TestComputeDayScore:
             + breakdown.weather * 0.20
         )
         assert breakdown.total == pytest.approx(expected, abs=0.05)
+
+    def test_out_of_season_total_is_dampened(self):
+        # Brochet season_active = [3,4,5,9,10,11]. In July (month 7) the
+        # species is biologically out of season, so the total is multiplied
+        # by 0.6 even with ideal conditions.
+        july_day = date(2026, 7, 12)
+        spot = _lyon_fleuve()
+        species = _brochet()
+        solunar = _build_solunar(
+            july_day, moon_phase=0.5, major=[(6, 8)], minor=[]
+        )
+        # In July, water temp will be 20-2+1=19°C (just above brochet optimal max 18 → near critical),
+        # so thermal won't be ideal. Use a lower air temp to keep thermal high.
+        weather = _build_weather(
+            july_day, air_temp=18.0, cloud=60.0, wind=8.0, pressure_now=1018.0
+        )
+        in_season_solunar = _build_solunar(
+            date(2026, 5, 12), moon_phase=0.5, major=[(6, 8)], minor=[]
+        )
+        in_season_weather = _build_weather(
+            date(2026, 5, 12), air_temp=20.0, cloud=60.0, wind=8.0, pressure_now=1018.0
+        )
+
+        in_season_score = compute_day_score(
+            spot, species, in_season_weather, in_season_solunar
+        )
+        out_of_season_score = compute_day_score(
+            spot, species, weather, solunar
+        )
+
+        assert in_season_score.total > 70
+        # Out-of-season total ≈ in_season × 0.6 (with similar sub-scores).
+        assert out_of_season_score.total <= in_season_score.total * 0.65
+
+    def test_in_season_total_not_dampened(self):
+        # May is in brochet's season_active.
+        day = date(2026, 5, 12)
+        spot = _lyon_fleuve()
+        species = _brochet()
+        breakdown = compute_day_score(
+            spot, species,
+            _build_weather(day, air_temp=20.0, pressure_now=1018.0),
+            _build_solunar(day, moon_phase=0.5, major=[(6, 8)], minor=[]),
+        )
+        expected_raw = (
+            breakdown.thermal * 0.25
+            + breakdown.pressure * 0.25
+            + breakdown.solunar * 0.20
+            + breakdown.moon * 0.10
+            + breakdown.weather * 0.20
+        )
+        # In-season: total == weighted sum (no dampening).
+        assert breakdown.total == pytest.approx(expected_raw, abs=0.05)
 
     def test_missing_target_day_raises(self):
         # Weather only covers 2026-05-11 and 2026-05-12 — asking for 13 fails.

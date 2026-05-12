@@ -22,6 +22,7 @@ from src.web.renderer import (
     SCORE_TIER_GOOD,
     SCORE_TIER_MID,
     STATIC_ASSETS,
+    _day_label,
     _format_generated_at,
     _score_tier,
     render,
@@ -78,7 +79,7 @@ def _build_matrix(days=2, total_values=None) -> ScoresMatrix:
             HourlyWeather(
                 time=midnight + timedelta(hours=offset),
                 temperature_2m=15.0,
-                surface_pressure=1018.0,
+                pressure_msl=1018.0,
                 wind_speed_10m=6.0,
                 wind_direction_10m=180.0,
                 cloud_cover=55.0,
@@ -126,6 +127,22 @@ def _build_matrix(days=2, total_values=None) -> ScoresMatrix:
         weather_by_spot={spot.id: weather},
         solunar_by_spot={spot.id: solunar_days},
     )
+
+
+class TestDayLabel:
+    def test_yesterday_is_hier(self):
+        assert _day_label(date(2026, 5, 11), date(2026, 5, 12)) == "Hier"
+
+    def test_today_is_short_aujourdhui(self):
+        assert _day_label(date(2026, 5, 12), date(2026, 5, 12)) == "Auj."
+
+    def test_future_uses_weekday(self):
+        # 2026-05-13 is a Wednesday.
+        assert _day_label(date(2026, 5, 13), date(2026, 5, 12)) == "Mer"
+
+    def test_two_days_ago_uses_weekday(self):
+        # No special label for D-2 or earlier.
+        assert _day_label(date(2026, 5, 10), date(2026, 5, 12)) == "Dim"
 
 
 class TestFormatGeneratedAt:

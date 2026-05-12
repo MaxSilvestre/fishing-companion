@@ -22,10 +22,20 @@ PRESSURE_OPTIMAL_MIN = 1013.0
 PRESSURE_OPTIMAL_MAX = 1022.0
 PRESSURE_OPTIMAL_CENTRE = 1017.0
 PRESSURE_DECAY_PER_HPA = 5.0
-PRESSURE_TREND_BONUS_THRESHOLD = 2.0
-PRESSURE_TREND_BONUS = 10.0
-PRESSURE_TREND_PENALTY_THRESHOLD = -3.0
-PRESSURE_TREND_PENALTY = -20.0
+PRESSURE_TREND_24H_BONUS_THRESHOLD = 2.0
+PRESSURE_TREND_24H_BONUS = 10.0
+PRESSURE_TREND_24H_PENALTY_THRESHOLD = -3.0
+PRESSURE_TREND_24H_PENALTY = -20.0
+PRESSURE_TREND_48H_BONUS_THRESHOLD = 4.0
+PRESSURE_TREND_48H_BONUS = 5.0
+PRESSURE_TREND_48H_PENALTY_THRESHOLD = -6.0
+PRESSURE_TREND_48H_PENALTY = -10.0
+
+# Penalty applied to the total when the species is biologically out of
+# season (the calendar month isn't in species.season_active). Even if the
+# weather looks ideal, fish are dormant outside their active months —
+# winter pike, summer trout, etc.
+OUT_OF_SEASON_MULTIPLIER = 0.6
 
 SOLUNAR_MAJOR_SCORE = 100.0
 SOLUNAR_MINOR_SCORE = 70.0
@@ -112,11 +122,14 @@ def score_thermal(water_temp: float, species: Species) -> float:
     return 100.0 * (species.temp_critical_max - water_temp) / span
 
 
-def score_pressure(pressure_now: float, trend_24h: float) -> float:
-    """Score current barometric pressure plus 24h trend (0-100).
+def score_pressure(
+    pressure_now: float, trend_24h: float, trend_48h: float = 0.0
+) -> float:
+    """Score current barometric pressure plus 24h and 48h trends (0-100).
 
     High stable or rising pressure is generally favorable; a sharp drop
-    over 24h indicates an incoming front and depresses activity.
+    over 24h indicates an incoming front and depresses activity. A
+    sustained rise over 48h (post-front recovery) is also positive.
     """
     if PRESSURE_OPTIMAL_MIN <= pressure_now <= PRESSURE_OPTIMAL_MAX:
         score = 100.0
@@ -127,10 +140,15 @@ def score_pressure(pressure_now: float, trend_24h: float) -> float:
             - abs(pressure_now - PRESSURE_OPTIMAL_CENTRE) * PRESSURE_DECAY_PER_HPA,
         )
 
-    if trend_24h > PRESSURE_TREND_BONUS_THRESHOLD:
-        score += PRESSURE_TREND_BONUS
-    elif trend_24h < PRESSURE_TREND_PENALTY_THRESHOLD:
-        score += PRESSURE_TREND_PENALTY
+    if trend_24h > PRESSURE_TREND_24H_BONUS_THRESHOLD:
+        score += PRESSURE_TREND_24H_BONUS
+    elif trend_24h < PRESSURE_TREND_24H_PENALTY_THRESHOLD:
+        score += PRESSURE_TREND_24H_PENALTY
+
+    if trend_48h > PRESSURE_TREND_48H_BONUS_THRESHOLD:
+        score += PRESSURE_TREND_48H_BONUS
+    elif trend_48h < PRESSURE_TREND_48H_PENALTY_THRESHOLD:
+        score += PRESSURE_TREND_48H_PENALTY
 
     return max(0.0, min(100.0, score))
 
@@ -219,10 +237,17 @@ def aggregate_day_weather(weather: WeatherData, day: date) -> dict[str, float]:
         raise ValueError(f"No hourly weather data for {day}")
 
     noon = _hour_at(weather, day, REFERENCE_HOUR) or day_hours[len(day_hours) // 2]
-    prev_noon = _hour_at(weather, day - timedelta(days=1), REFERENCE_HOUR)
+    prev_24h = _hour_at(weather, day - timedelta(days=1), REFERENCE_HOUR)
+    prev_48h = _hour_at(weather, day - timedelta(days=2), REFERENCE_HOUR)
+
     trend_24h = (
-        noon.surface_pressure - prev_noon.surface_pressure
-        if prev_noon is not None
+        noon.pressure_msl - prev_24h.pressure_msl
+        if prev_24h is not None
+        else 0.0
+    )
+    trend_48h = (
+        noon.pressure_msl - prev_48h.pressure_msl
+        if prev_48h is not None
         else 0.0
     )
 
@@ -231,8 +256,9 @@ def aggregate_day_weather(weather: WeatherData, day: date) -> dict[str, float]:
         "cloud_avg": sum(h.cloud_cover for h in day_hours) / len(day_hours),
         "wind_max": max(h.wind_speed_10m for h in day_hours),
         "precip_total": sum(h.precipitation for h in day_hours),
-        "pressure_now": noon.surface_pressure,
+        "pressure_now": noon.pressure_msl,
         "trend_24h": trend_24h,
+        "trend_48h": trend_48h,
     }
 
 
@@ -253,7 +279,9 @@ def compute_day_score(
     )
 
     thermal = score_thermal(water_temp, species)
-    pressure = score_pressure(agg["pressure_now"], agg["trend_24h"])
+    pressure = score_pressure(
+        agg["pressure_now"], agg["trend_24h"], agg["trend_48h"]
+    )
     solunar = score_solunar(solunar_day, species.active_hours)
     moon = score_moon(solunar_day.moon_phase)
     weather_score = score_weather(
@@ -267,6 +295,10 @@ def compute_day_score(
         + moon * WEIGHT_MOON
         + weather_score * WEIGHT_WEATHER
     )
+
+    # Biology overrides physics: dampen score when the species is dormant.
+    if solunar_day.date.month not in species.season_active:
+        total *= OUT_OF_SEASON_MULTIPLIER
 
     return ScoreBreakdown(
         thermal=round(thermal, 2),
