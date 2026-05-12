@@ -1,0 +1,47 @@
+name: Daily forecast update
+
+on:
+  schedule:
+    # 05:00 UTC — generates fresh forecasts before most morning sessions.
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  # Required to push the regenerated docs/ back to main.
+  contents: write
+
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Generate dashboard
+        run: python -m src.web.generate
+
+      - name: Commit docs/ if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No changes in docs/ — nothing to commit."
+          else
+            git commit -m "chore: daily forecast update"
+            git push
+          fi

@@ -41,8 +41,34 @@ pytest -v
 
 ## Déploiement
 
-Activer GitHub Pages : `Settings > Pages > Source: main branch, /docs folder`.
-Le workflow `.github/workflows/daily.yml` regénère et commit `docs/` chaque matin.
+Le workflow `.github/workflows/daily.yml` regénère `docs/` chaque matin à 5h UTC et commit le résultat sur `main`. GitHub Pages sert ensuite `docs/` en statique.
+
+### Mise en place initiale (une seule fois)
+
+1. **Créer le repo distant et pousser**
+   ```bash
+   gh repo create fishing-companion --public --source=. --remote=origin --push
+   # ou via l'UI GitHub puis : git remote add origin git@github.com:<owner>/fishing-companion.git ; git push -u origin main
+   ```
+
+2. **Activer GitHub Pages**
+   - Va dans `Settings > Pages`
+   - Source : `Deploy from a branch`
+   - Branch : `main`, Folder : `/docs`
+   - Save
+
+3. **Vérifier les permissions Actions**
+   - `Settings > Actions > General > Workflow permissions` : "Read and write permissions" doit être coché
+   - "Allow GitHub Actions to create and approve pull requests" peut rester décoché
+
+4. **Premier run manuel pour tester**
+   - `Actions > Daily forecast update > Run workflow` → branche `main` → Run
+   - Le workflow checkoute, install deps, regen `docs/`, push si changements
+   - Le commit `chore: daily forecast update` doit apparaître sur `main` dans la minute
+
+5. **Accéder au dashboard**
+   - URL : `https://<owner>.github.io/fishing-companion/`
+   - Disponible 1-2 min après le 1er push réussi de `docs/`
 
 ## Gérer les spots et espèces
 
