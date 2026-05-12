@@ -188,6 +188,16 @@ def _build_detail_payload(matrix: ScoresMatrix) -> dict[str, Any]:
                     "solunar": round(b.solunar, 1),
                     "moon": round(b.moon, 1),
                     "weather": round(b.weather, 1),
+                    "slots": [
+                        {
+                            "start": s.start_hour,
+                            "end": s.end_hour,
+                            "score": s.score,
+                            "in_active_hours": s.in_active_hours,
+                            "tide_phase": s.tide_phase,
+                        }
+                        for s in ds.slots
+                    ],
                 }
             days_payload[d.isoformat()] = {
                 "weather": _weather_aggregates_to_dict(weather, d)

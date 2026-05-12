@@ -287,6 +287,73 @@ dialog#detail-dialog dl.grid dd {
   font-variant-numeric: tabular-nums;
 }
 
+/* Time slot bars */
+.slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.slot {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr 2rem;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.slot-label {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-bar {
+  grid-column: 2;
+  grid-row: 1;
+  display: block;
+  height: 0.65rem;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.slot-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.2s ease-out;
+}
+
+.slot-good .slot-fill { background: var(--color-good); }
+.slot-mid  .slot-fill { background: var(--color-mid); }
+.slot-bad  .slot-fill { background: var(--color-bad); }
+
+.slot-score {
+  grid-column: 3;
+  grid-row: 1;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-meta {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-style: italic;
+}
+.slot-meta:empty { display: none; }
+
+.slot-inactive .slot-label,
+.slot-inactive .slot-score {
+  opacity: 0.55;
+}
+
 /* Tablet: a bit more space, show species names. */
 @media (min-width: 600px) {
   body {

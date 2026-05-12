@@ -15,8 +15,10 @@ from src.core.models import (
 )
 from src.core.scoring import (
     SEASONAL_WATER_OFFSET_BY_MONTH,
+    SLOT_HOURS,
     SPOT_TYPE_WATER_OFFSET,
     compute_day_score,
+    compute_slot_scores,
     estimate_water_temp,
     score_moon,
     score_pressure,
@@ -548,6 +550,60 @@ class TestComputeDayScore:
         )
         # In-season: total == weighted sum (no dampening).
         assert breakdown.total == pytest.approx(expected_raw, abs=0.05)
+
+    def test_slot_scores_returned_for_each_window(self):
+        day = date(2026, 5, 12)
+        slots = compute_slot_scores(
+            _lyon_fleuve(),
+            _brochet(),
+            _build_weather(day, pressure_now=1018.0),
+            _build_solunar(day, moon_phase=0.5, major=[(6, 8)], minor=[]),
+        )
+        assert len(slots) == len(SLOT_HOURS)
+        assert all(0 <= s.score <= 100 for s in slots)
+        assert all(s.tide_phase is None for s in slots)
+
+    def test_slot_score_drops_outside_active_hours(self):
+        # Brochet active 5-9 and 17-21. The 12-14 slot is dead — score should
+        # be much lower than the 6-8 slot (in active hours).
+        day = date(2026, 5, 12)
+        slots = compute_slot_scores(
+            _lyon_fleuve(),
+            _brochet(),
+            _build_weather(day, pressure_now=1018.0),
+            _build_solunar(day, moon_phase=0.5, major=[(6, 8)], minor=[]),
+        )
+        by_start = {s.start_hour: s for s in slots}
+        assert by_start[6].in_active_hours is True
+        assert by_start[12].in_active_hours is False
+        assert by_start[6].score > by_start[12].score
+
+    def test_sea_slot_has_tide_phase(self):
+        # Build a saltwater spot.
+        from src.core.models import Spot
+        grau = Spot.model_validate({
+            "id": "grau", "name": "Grau", "latitude": 43.5378,
+            "longitude": 4.1342, "type": "mer", "altitude": 0,
+        })
+        # Sea species: dorade.
+        from src.core.models import Species
+        dorade = Species.model_validate({
+            "id": "dorade", "name": "Dorade", "emoji": "⭐",
+            "temp_optimal_min": 16, "temp_optimal_max": 24,
+            "temp_critical_min": 10, "temp_critical_max": 28,
+            "pressure_preference": "stable",
+            "active_hours": [[6, 11], [16, 20]],
+            "season_active": [5, 6, 7, 8],
+            "habitat": "saltwater",
+        })
+        day = date(2026, 5, 12)
+        slots = compute_slot_scores(
+            grau, dorade,
+            _build_weather(day, air_temp=20.0, pressure_now=1018.0),
+            _build_solunar(day, moon_phase=0.5, major=[(12, 14)], minor=[]),
+        )
+        assert all(s.tide_phase in {"rising", "high", "falling", "low"}
+                   for s in slots)
 
     def test_missing_target_day_raises(self):
         # Weather only covers 2026-05-11 and 2026-05-12 — asking for 13 fails.

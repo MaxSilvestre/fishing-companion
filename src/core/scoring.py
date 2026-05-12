@@ -12,11 +12,14 @@ from datetime import date, datetime, time, timedelta
 from src.core.models import (
     HourlyWeather,
     ScoreBreakdown,
+    SlotScore,
     SolunarDay,
     Species,
     Spot,
     WeatherData,
+    spot_habitat,
 )
+from src.core.tide import tide_multiplier, tide_phase_at
 
 PRESSURE_OPTIMAL_MIN = 1013.0
 PRESSURE_OPTIMAL_MAX = 1022.0
@@ -58,6 +61,15 @@ WEIGHT_MOON = 0.10
 WEIGHT_WEATHER = 0.20
 
 REFERENCE_HOUR = 12  # noon — used to sample pressure and 24h trend
+
+# Daytime slots in 2-hour chunks, anchored at 6h (typical earliest viable hour).
+SLOT_HOURS: tuple[tuple[int, int], ...] = (
+    (6, 8), (8, 10), (10, 12), (12, 14),
+    (14, 16), (16, 18), (18, 20), (20, 22),
+)
+# Slots that fall outside the species' active hours get heavily dampened —
+# even ideal weather won't make a fish bite when it's asleep.
+INACTIVE_HOUR_MULTIPLIER = 0.4
 
 # Seasonal water-vs-air offsets, by month.
 #
@@ -309,3 +321,108 @@ def compute_day_score(
         weather=round(weather_score, 2),
         total=round(total, 2),
     )
+
+
+def _slot_overlaps_active_hours(
+    h_start: int, h_end: int, active_hours: list[tuple[int, int]]
+) -> bool:
+    """True if any species active window overlaps the [h_start, h_end) slot."""
+    for a_start, a_end in active_hours:
+        if h_start < a_end and a_start < h_end:
+            return True
+    return False
+
+
+def _slot_solunar_score(
+    slot_start: datetime, slot_end: datetime, solunar_day: SolunarDay
+) -> float:
+    """Score a slot by whether it intersects major/minor lunar periods."""
+    def overlaps(periods: list[tuple[datetime, datetime]]) -> bool:
+        for p_start, p_end in periods:
+            if slot_start < p_end and p_start < slot_end:
+                return True
+        return False
+
+    if overlaps(solunar_day.major_periods):
+        return SOLUNAR_MAJOR_SCORE
+    if overlaps(solunar_day.minor_periods):
+        return SOLUNAR_MINOR_SCORE
+    return SOLUNAR_BASELINE_SCORE
+
+
+def compute_slot_scores(
+    spot: Spot,
+    species: Species,
+    weather: WeatherData,
+    solunar_day: SolunarDay,
+) -> list[SlotScore]:
+    """Score every 2-hour slot from 06:00 to 22:00 for a (spot, species, day).
+
+    For sea spots (habitat == saltwater), the slot total is further modulated
+    by tide phase using a lunar-transit approximation.
+    """
+    day = solunar_day.date
+    midnight = datetime.combine(day, time.min)
+    daily_agg = aggregate_day_weather(weather, day)
+    is_in_season = day.month in species.season_active
+    is_saltwater = spot_habitat(spot.type) == "saltwater"
+
+    slots: list[SlotScore] = []
+    for h_start, h_end in SLOT_HOURS:
+        slot_start = midnight + timedelta(hours=h_start)
+        slot_end = midnight + timedelta(hours=h_end)
+
+        slot_hours = [
+            h for h in weather.hourly if slot_start <= h.time < slot_end
+        ]
+        if not slot_hours:
+            continue
+
+        air_avg = sum(h.temperature_2m for h in slot_hours) / len(slot_hours)
+        cloud_avg = sum(h.cloud_cover for h in slot_hours) / len(slot_hours)
+        wind_max = max(h.wind_speed_10m for h in slot_hours)
+        precip_total = sum(h.precipitation for h in slot_hours)
+        mid_hour = slot_hours[len(slot_hours) // 2]
+
+        water_temp = estimate_water_temp(air_avg, day.month, spot.type)
+        thermal = score_thermal(water_temp, species)
+        pressure = score_pressure(
+            mid_hour.pressure_msl, daily_agg["trend_24h"], daily_agg["trend_48h"]
+        )
+        solunar = _slot_solunar_score(slot_start, slot_end, solunar_day)
+        moon = score_moon(solunar_day.moon_phase)
+        weather_score = score_weather(cloud_avg, wind_max, precip_total)
+
+        total = (
+            thermal * WEIGHT_THERMAL
+            + pressure * WEIGHT_PRESSURE
+            + solunar * WEIGHT_SOLUNAR
+            + moon * WEIGHT_MOON
+            + weather_score * WEIGHT_WEATHER
+        )
+
+        in_active = _slot_overlaps_active_hours(
+            h_start, h_end, species.active_hours
+        )
+        if not in_active:
+            total *= INACTIVE_HOUR_MULTIPLIER
+        if not is_in_season:
+            total *= OUT_OF_SEASON_MULTIPLIER
+
+        tide_phase = None
+        if is_saltwater:
+            slot_mid = slot_start + (slot_end - slot_start) / 2
+            tide_phase = tide_phase_at(slot_mid, solunar_day)
+            total *= tide_multiplier(tide_phase)
+
+        slots.append(
+            SlotScore(
+                start_hour=h_start,
+                end_hour=h_end,
+                score=int(max(0.0, min(100.0, round(total)))),
+                in_active_hours=in_active,
+                tide_phase=tide_phase,
+            )
+        )
+
+    return slots

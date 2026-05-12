@@ -21,7 +21,7 @@ from src.core.models import (
     Spot,
     spot_habitat,
 )
-from src.core.scoring import compute_day_score
+from src.core.scoring import compute_day_score, compute_slot_scores
 from src.core.solunar import compute_solunar
 from src.core.weather import HTTP_TIMEOUT_SECONDS, fetch_forecast
 
@@ -88,12 +88,14 @@ async def compute_all_scores(
             spot_solunar.append(solunar)
             for sp in compatible_species:
                 breakdown = compute_day_score(spot, sp, weather, solunar)
+                slots = compute_slot_scores(spot, sp, weather, solunar)
                 scores.append(
                     DayScore(
                         spot_id=spot.id,
                         species_id=sp.id,
                         date=target,
                         breakdown=breakdown,
+                        slots=slots,
                     )
                 )
         solunar_by_spot[spot.id] = spot_solunar

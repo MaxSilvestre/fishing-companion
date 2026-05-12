@@ -164,6 +164,21 @@ class ScoreBreakdown(BaseModel):
     total: float = Field(..., ge=0.0, le=100.0)
 
 
+TidePhase = Literal["rising", "high", "falling", "low"]
+
+
+class SlotScore(BaseModel):
+    """Score for a 2-hour window inside a (spot, species, date) triple."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start_hour: int = Field(..., ge=0, le=23)
+    end_hour: int = Field(..., ge=1, le=24)
+    score: int = Field(..., ge=0, le=100)
+    in_active_hours: bool
+    tide_phase: TidePhase | None = None
+
+
 class DayScore(BaseModel):
     """Activity score for a (spot, species, date) triple."""
 
@@ -173,6 +188,7 @@ class DayScore(BaseModel):
     species_id: str
     date: date
     breakdown: ScoreBreakdown
+    slots: list[SlotScore] = []
 
 
 class ScoresMatrix(BaseModel):

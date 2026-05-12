@@ -34,6 +34,46 @@
       .join(" · ");
   }
 
+  function tideLabel(phase) {
+    return {
+      rising: "Marée montante",
+      high: "Pleine mer",
+      falling: "Marée descendante",
+      low: "Basse mer",
+    }[phase] || phase;
+  }
+
+  function slotTier(score) {
+    if (score >= 70) return "good";
+    if (score >= 40) return "mid";
+    return "bad";
+  }
+
+  function renderSlots(slots) {
+    if (!slots || slots.length === 0) return "";
+    let html = "<h4>Par tranche de 2h</h4>";
+    html += '<div class="slots">';
+    for (const s of slots) {
+      const label =
+        String(s.start).padStart(2, "0") + "h–" +
+        String(s.end).padStart(2, "0") + "h";
+      const tier = slotTier(s.score);
+      const meta = [];
+      if (!s.in_active_hours) meta.push("hors heures actives");
+      if (s.tide_phase) meta.push(tideLabel(s.tide_phase));
+      const metaStr = meta.length ? " · " + meta.join(" · ") : "";
+      html += `
+        <div class="slot slot-${tier}${s.in_active_hours ? "" : " slot-inactive"}">
+          <span class="slot-label">${label}</span>
+          <span class="slot-bar"><span class="slot-fill" style="width:${s.score}%"></span></span>
+          <span class="slot-score">${s.score}</span>
+          <span class="slot-meta">${escapeHtml(metaStr)}</span>
+        </div>`;
+    }
+    html += "</div>";
+    return html;
+  }
+
   function moonLabel(phase) {
     if (phase < 0.05 || phase > 0.95) return "Nouvelle lune";
     if (phase < 0.20) return "Premier croissant";
@@ -59,6 +99,8 @@
 
     let html = '<p class="big-score">Score : <strong>' +
       scores.total + "</strong> / 100</p>";
+
+    html += renderSlots(scores.slots);
 
     html += "<h4>Sous-scores</h4>";
     html += '<dl class="grid">' +
