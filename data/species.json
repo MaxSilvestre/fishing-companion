@@ -1,0 +1,67 @@
+[
+  {
+    "id": "brochet",
+    "name": "Brochet",
+    "emoji": "🐊",
+    "temp_optimal_min": 12,
+    "temp_optimal_max": 18,
+    "temp_critical_min": 4,
+    "temp_critical_max": 21,
+    "pressure_preference": "stable_or_rising",
+    "active_hours": [[5, 9], [17, 21]],
+    "season_active": [3, 4, 5, 9, 10, 11],
+    "weather_notes": "Apprécie les ciels couverts et la pluie fine, fuit les fortes chaleurs"
+  },
+  {
+    "id": "sandre",
+    "name": "Sandre",
+    "emoji": "🐟",
+    "temp_optimal_min": 14,
+    "temp_optimal_max": 20,
+    "temp_critical_min": 6,
+    "temp_critical_max": 24,
+    "pressure_preference": "stable",
+    "active_hours": [[4, 8], [19, 23]],
+    "season_active": [4, 5, 6, 9, 10, 11],
+    "weather_notes": "Crépusculaire et nocturne, aime eaux troubles et basse luminosité"
+  },
+  {
+    "id": "perche",
+    "name": "Perche",
+    "emoji": "🐠",
+    "temp_optimal_min": 14,
+    "temp_optimal_max": 22,
+    "temp_critical_min": 6,
+    "temp_critical_max": 25,
+    "pressure_preference": "stable_or_rising",
+    "active_hours": [[7, 11], [15, 19]],
+    "season_active": [4, 5, 6, 7, 8, 9, 10],
+    "weather_notes": "Très active en banc, journée pleine ensoleillée OK"
+  },
+  {
+    "id": "black_bass",
+    "name": "Black bass",
+    "emoji": "🐡",
+    "temp_optimal_min": 18,
+    "temp_optimal_max": 26,
+    "temp_critical_min": 12,
+    "temp_critical_max": 30,
+    "pressure_preference": "stable",
+    "active_hours": [[6, 10], [17, 21]],
+    "season_active": [5, 6, 7, 8, 9, 10],
+    "weather_notes": "Aime la chaleur, inactif en eau froide. Excellent par temps couvert chaud"
+  },
+  {
+    "id": "truite_fario",
+    "name": "Truite fario",
+    "emoji": "🎣",
+    "temp_optimal_min": 8,
+    "temp_optimal_max": 16,
+    "temp_critical_min": 2,
+    "temp_critical_max": 19,
+    "pressure_preference": "stable_or_rising",
+    "active_hours": [[6, 10], [17, 21]],
+    "season_active": [3, 4, 5, 6, 9],
+    "weather_notes": "Apprécie ciels couverts et eaux légèrement teintées après averse"
+  }
+]

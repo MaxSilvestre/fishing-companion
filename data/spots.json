@@ -1,0 +1,29 @@
+[
+  {
+    "id": "lyon",
+    "name": "Lyon (confluence Rhône/Saône)",
+    "latitude": 45.7640,
+    "longitude": 4.8357,
+    "type": "fleuve",
+    "altitude": 170,
+    "notes": "Confluence Rhône-Saône, secteurs urbains et péri-urbains"
+  },
+  {
+    "id": "vienne",
+    "name": "Vienne (Rhône)",
+    "latitude": 45.5256,
+    "longitude": 4.8743,
+    "type": "fleuve",
+    "altitude": 160,
+    "notes": "Rhône en aval de Lyon, courant plus marqué"
+  },
+  {
+    "id": "lozanne",
+    "name": "Lozanne (Azergues)",
+    "latitude": 45.8548,
+    "longitude": 4.6802,
+    "type": "riviere",
+    "altitude": 230,
+    "notes": "Confluence Azergues-Brévenne, eaux plus fraîches"
+  }
+]
