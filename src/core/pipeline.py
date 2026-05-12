@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import httpx
 
@@ -94,7 +94,7 @@ async def compute_all_scores(
     logger.info("Computed %d day scores", len(scores))
 
     return ScoresMatrix(
-        generated_at=datetime.now(),
+        generated_at=datetime.now(timezone.utc),
         spots=spots,
         species=species,
         scores=scores,

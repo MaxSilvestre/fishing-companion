@@ -22,6 +22,7 @@ from src.web.renderer import (
     SCORE_TIER_GOOD,
     SCORE_TIER_MID,
     STATIC_ASSETS,
+    _format_generated_at,
     _score_tier,
     render,
 )
@@ -125,6 +126,25 @@ def _build_matrix(days=2, total_values=None) -> ScoresMatrix:
         weather_by_spot={spot.id: weather},
         solunar_by_spot={spot.id: solunar_days},
     )
+
+
+class TestFormatGeneratedAt:
+    def test_naive_assumed_utc_converted_to_paris_summer(self):
+        # In May, Paris is CEST (UTC+2). 09:20 UTC → 11:20 local.
+        result = _format_generated_at(datetime(2026, 5, 12, 9, 20))
+        assert result == "2026-05-12 11:20"
+
+    def test_naive_assumed_utc_converted_to_paris_winter(self):
+        # In January, Paris is CET (UTC+1). 09:20 UTC → 10:20 local.
+        result = _format_generated_at(datetime(2026, 1, 12, 9, 20))
+        assert result == "2026-01-12 10:20"
+
+    def test_tz_aware_utc_converted(self):
+        from datetime import timezone as tz_module
+        result = _format_generated_at(
+            datetime(2026, 5, 12, 9, 20, tzinfo=tz_module.utc)
+        )
+        assert result == "2026-05-12 11:20"
 
 
 class TestScoreTier:

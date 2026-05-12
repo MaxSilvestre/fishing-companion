@@ -7,7 +7,7 @@ correctly across spots, days, and species.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -129,8 +129,9 @@ async def test_pipeline_produces_full_matrix():
     for spot_id, solunar_days in matrix.solunar_by_spot.items():
         assert len(solunar_days) == days
 
-    # generated_at is recent (sanity check).
-    assert (datetime.now() - matrix.generated_at).total_seconds() < 60
+    # generated_at is recent (sanity check) — pipeline now returns tz-aware UTC.
+    assert matrix.generated_at.tzinfo is not None
+    assert (datetime.now(timezone.utc) - matrix.generated_at).total_seconds() < 60
 
 
 async def test_pipeline_lookup_roundtrip():

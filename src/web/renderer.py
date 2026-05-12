@@ -8,13 +8,17 @@ those files to disk.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.core.models import ScoresMatrix, SolunarDay, WeatherData
 from src.core.scoring import aggregate_day_weather
+
+DISPLAY_TIMEZONE = ZoneInfo("Europe/Paris")
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -26,6 +30,17 @@ SCORE_TIER_MID = 40
 STATIC_ASSETS = ("style.css", "app.js", "manifest.json", "icon.svg")
 
 WORKFLOW_PATH = "/actions/workflows/daily.yml"
+
+
+def _format_generated_at(dt: datetime) -> str:
+    """Format a generated-at datetime for display in Europe/Paris local time.
+
+    Naive datetimes are assumed to be UTC (matches the pipeline convention
+    and GitHub Actions runners).
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(DISPLAY_TIMEZONE).strftime("%Y-%m-%d %H:%M")
 
 
 def _score_tier(score: int | None) -> str:
@@ -106,7 +121,7 @@ def _build_view(matrix: ScoresMatrix) -> dict[str, Any]:
         spots_view.append({"id": spot.id, "name": spot.name, "rows": rows})
 
     return {
-        "generated_at": matrix.generated_at.strftime("%Y-%m-%d %H:%M"),
+        "generated_at": _format_generated_at(matrix.generated_at),
         "spots": spots_view,
         "species": [
             {"id": sp.id, "name": sp.name, "emoji": sp.emoji}
