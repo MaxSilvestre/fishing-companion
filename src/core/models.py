@@ -12,8 +12,16 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-SpotType = Literal["fleuve", "riviere", "lac"]
+SpotType = Literal["fleuve", "riviere", "lac", "mer"]
+Habitat = Literal["freshwater", "saltwater"]
 PressurePreference = Literal["stable", "rising", "stable_or_rising"]
+
+SALTWATER_SPOT_TYPES: frozenset[SpotType] = frozenset({"mer"})
+
+
+def spot_habitat(spot_type: SpotType) -> Habitat:
+    """Derive the habitat (freshwater/saltwater) from a spot type."""
+    return "saltwater" if spot_type in SALTWATER_SPOT_TYPES else "freshwater"
 
 MIN_HOUR = 0
 MAX_HOUR = 24
@@ -50,6 +58,7 @@ class Species(BaseModel):
     pressure_preference: PressurePreference
     active_hours: list[tuple[int, int]]
     season_active: list[int]
+    habitat: Habitat = "freshwater"
     weather_notes: str = ""
 
     @model_validator(mode="after")

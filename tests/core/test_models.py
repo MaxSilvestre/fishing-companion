@@ -235,15 +235,26 @@ class TestSolunarAndScores:
 
 
 class TestConfigLoaders:
-    def test_load_spots_returns_three(self):
+    def test_load_spots(self):
         spots = load_spots()
-        assert len(spots) == 3
-        assert {s.id for s in spots} == {"lyon", "vienne", "lozanne"}
+        assert {s.id for s in spots} == {
+            "lyon", "vienne", "lozanne", "grau_du_roi",
+        }
 
-    def test_load_species_returns_five(self):
+    def test_load_species(self):
         species = load_species()
         ids = {s.id for s in species}
-        assert ids == {"brochet", "sandre", "perche", "black_bass", "truite_fario"}
+        assert ids == {
+            "brochet", "sandre", "perche", "black_bass",
+            "truite_fario", "dorade", "loup",
+        }
+
+    def test_loaded_species_have_correct_habitat(self):
+        species = load_species()
+        by_id = {s.id: s for s in species}
+        assert by_id["brochet"].habitat == "freshwater"
+        assert by_id["dorade"].habitat == "saltwater"
+        assert by_id["loup"].habitat == "saltwater"
 
     def test_load_spots_missing_file(self, tmp_path: Path):
         with pytest.raises(ConfigError, match="not found"):

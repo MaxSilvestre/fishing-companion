@@ -80,6 +80,7 @@ SPOT_TYPE_WATER_OFFSET: dict[str, float] = {
     "lac": 0.0,
     "fleuve": 1.0,    # larger volume, slower flow → slightly warmer
     "riviere": 0.0,
+    "mer": 3.0,       # Mediterranean is consistently warmer than inland water
 }
 
 

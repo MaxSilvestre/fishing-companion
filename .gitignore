@@ -37,3 +37,4 @@ Thumbs.db
 
 # NOTE: docs/ is committed — GitHub Pages serves from it and the
 # .github/workflows/daily.yml workflow regenerates it daily.
+.claude/

@@ -85,7 +85,12 @@ class TestEstimateWaterTemp:
         assert set(SEASONAL_WATER_OFFSET_BY_MONTH.keys()) == set(range(1, 13))
 
     def test_all_spot_types_present(self):
-        assert set(SPOT_TYPE_WATER_OFFSET.keys()) == {"lac", "fleuve", "riviere"}
+        assert set(SPOT_TYPE_WATER_OFFSET.keys()) == {"lac", "fleuve", "riviere", "mer"}
+
+    def test_sea_water_is_warmest(self):
+        # Mediterranean is consistently the warmest at the same air temp.
+        for month in range(1, 13):
+            assert estimate_water_temp(15.0, month, "mer") > estimate_water_temp(15.0, month, "fleuve")
 
 
 class TestScoreThermal:

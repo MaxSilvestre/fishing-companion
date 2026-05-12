@@ -62,6 +62,35 @@
     "pressure_preference": "stable_or_rising",
     "active_hours": [[6, 10], [17, 21]],
     "season_active": [3, 4, 5, 6, 9],
+    "habitat": "freshwater",
     "weather_notes": "Apprécie ciels couverts et eaux légèrement teintées après averse"
+  },
+  {
+    "id": "dorade",
+    "name": "Dorade royale",
+    "emoji": "⭐",
+    "temp_optimal_min": 16,
+    "temp_optimal_max": 24,
+    "temp_critical_min": 10,
+    "temp_critical_max": 28,
+    "pressure_preference": "stable",
+    "active_hours": [[6, 11], [16, 20]],
+    "season_active": [5, 6, 7, 8, 9, 10],
+    "habitat": "saltwater",
+    "weather_notes": "Active en eau chaude, bord de côte au printemps-été. Marée non prise en compte (TODO)"
+  },
+  {
+    "id": "loup",
+    "name": "Loup (bar)",
+    "emoji": "🐺",
+    "temp_optimal_min": 12,
+    "temp_optimal_max": 20,
+    "temp_critical_min": 6,
+    "temp_critical_max": 25,
+    "pressure_preference": "stable_or_rising",
+    "active_hours": [[5, 9], [17, 22]],
+    "season_active": [3, 4, 5, 6, 9, 10, 11],
+    "habitat": "saltwater",
+    "weather_notes": "Crépusculaire et nocturne, opportuniste à la marée montante. Marée non prise en compte (TODO)"
   }
 ]

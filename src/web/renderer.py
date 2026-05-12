@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from src.core.models import ScoresMatrix, SolunarDay, WeatherData
+from src.core.models import ScoresMatrix, SolunarDay, WeatherData, spot_habitat
 from src.core.scoring import aggregate_day_weather
 
 DISPLAY_TIMEZONE = ZoneInfo("Europe/Paris")
@@ -111,10 +111,12 @@ def _build_view(matrix: ScoresMatrix) -> dict[str, Any]:
 
     spots_view = []
     for spot in matrix.spots:
+        habitat = spot_habitat(spot.type)
+        spot_species = [s for s in matrix.species if s.habitat == habitat]
         rows = []
         for d in dates:
             cells = []
-            for species in matrix.species:
+            for species in spot_species:
                 score = matrix.get_score(spot.id, d, species.id)
                 value = int(round(score.breakdown.total)) if score else None
                 cells.append(
@@ -135,7 +137,17 @@ def _build_view(matrix: ScoresMatrix) -> dict[str, Any]:
                     "cells": cells,
                 }
             )
-        spots_view.append({"id": spot.id, "name": spot.name, "rows": rows})
+        spots_view.append(
+            {
+                "id": spot.id,
+                "name": spot.name,
+                "species": [
+                    {"id": s.id, "name": s.name, "emoji": s.emoji}
+                    for s in spot_species
+                ],
+                "rows": rows,
+            }
+        )
 
     return {
         "generated_at": _format_generated_at(matrix.generated_at),

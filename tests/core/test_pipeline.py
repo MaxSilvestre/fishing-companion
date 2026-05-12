@@ -190,6 +190,50 @@ async def test_pipeline_propagates_weather_errors():
             )
 
 
+async def test_pipeline_filters_by_habitat():
+    """Species are only scored at spots whose habitat matches."""
+    freshwater_spot = Spot.model_validate({
+        "id": "lyon", "name": "Lyon", "latitude": 45.764,
+        "longitude": 4.8357, "type": "fleuve", "altitude": 170,
+    })
+    sea_spot = Spot.model_validate({
+        "id": "grau", "name": "Grau", "latitude": 43.5378,
+        "longitude": 4.1342, "type": "mer", "altitude": 0,
+    })
+    brochet = Species.model_validate({
+        "id": "brochet", "name": "Brochet", "emoji": "🐊",
+        "temp_optimal_min": 12, "temp_optimal_max": 18,
+        "temp_critical_min": 4, "temp_critical_max": 21,
+        "pressure_preference": "stable_or_rising",
+        "active_hours": [[5, 9]], "season_active": [5],
+        "habitat": "freshwater",
+    })
+    dorade = Species.model_validate({
+        "id": "dorade", "name": "Dorade", "emoji": "⭐",
+        "temp_optimal_min": 16, "temp_optimal_max": 24,
+        "temp_critical_min": 10, "temp_critical_max": 28,
+        "pressure_preference": "stable",
+        "active_hours": [[6, 11]], "season_active": [5],
+        "habitat": "saltwater",
+    })
+    start = date(2026, 5, 12)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_fake_payload(start))
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        matrix = await compute_all_scores(
+            [freshwater_spot, sea_spot], [brochet, dorade],
+            days=2, start_date=start, client=client,
+        )
+
+    pairs = {(s.spot_id, s.species_id) for s in matrix.scores}
+    assert ("lyon", "brochet") in pairs
+    assert ("grau", "dorade") in pairs
+    assert ("lyon", "dorade") not in pairs
+    assert ("grau", "brochet") not in pairs
+
+
 async def test_pipeline_fetches_in_parallel():
     """All weather calls overlap — verified by tracking concurrent in-flight count."""
     import asyncio

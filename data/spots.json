@@ -25,5 +25,14 @@
     "type": "riviere",
     "altitude": 230,
     "notes": "Confluence Azergues-Brévenne, eaux plus fraîches"
+  },
+  {
+    "id": "grau_du_roi",
+    "name": "Le Grau-du-Roi (Méditerranée)",
+    "latitude": 43.5378,
+    "longitude": 4.1342,
+    "type": "mer",
+    "altitude": 0,
+    "notes": "Côte camarguaise — score incomplet sans la marée (TODO)"
   }
 ]
